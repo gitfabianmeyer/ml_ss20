@@ -6,6 +6,7 @@ import random
 
 def create_mini_batches(data, batch_size):
 
+    np.random.shuffle(data)
     num_mini_batches = int(data.shape[0] // batch_size)
     batches = []
     i = 0
@@ -22,7 +23,8 @@ def create_mini_batches(data, batch_size):
 
 # use mini batch gradient (repeat until convergence) k \in [10,1000]
 def z(x, thetas):
-    return thetas[0] + x[0] * thetas[1] + x[1] * thetas[2]
+    # to fit len(x) == len(thetas)
+    return np.matmul(x, thetas)
 
 
 def g_of_x(x, thetas):
@@ -35,57 +37,52 @@ def cost(x, y, thetas):
 
 
 def m_b_g_d(data, alpha, batch_size):
-
+    #random initialize thetas
     thetas = [random.uniform(-0.01, 0.01) for i in range(data.shape[1])]
+    start_thetas = thetas
+
     error_list = [np.inf]
-    # stopping criteria: convergence
-    batches = create_mini_batches(data, batch_size)
-    # calc "batch error"
-    print("Iteration: {}, Cost: {}".format(len(error_list), error_list[-1]))
+    for i in range(100):
+        print("Iteration: {}".format(i+1))
 
-    for batch in batches:
-        # sum errors of the batch
-        error = sum([cost(b[:2], b[2], thetas) for b in batch])
-        error_list.append(error)
-        thetas = thetas + alpha * error
-    while error_list[-1] < error_list[-2]:
-        print("Iteration: {}, Cost: {}".format(len(error_list), error_list[-1]))
-        batches = create_mini_batches(data, batch_size)
-        # calc "batch error"
-        for batch in batches:
-            # sum errors of the batch
-            error = sum([cost(b[:2], b[2], thetas) for b in batch])
-            error_list.append(error)
-            thetas = thetas + alpha * error
+        for point in data:
+            x = [1, point[0], point[1]]
+            theta_new = []
+            costs = cost(x, point[2], thetas)
+            error_list.append(costs)
+            for j in range(len(thetas)):
+                #maybe add power
+                theta_j = thetas[j] + alpha * costs * x[j]
+                theta_new.append(theta_j)
+            thetas = theta_new
 
-    return error_list[1:], thetas
+    return error_list[1:], thetas, start_thetas
 
-def plot_model(data, params):
+def plot_model(data, params, start_params):
     def f(x, thetas):
         return (thetas[0] + thetas[1]*x) * (-1/thetas[2])
 
-    params_rand = [random.uniform(-0.1, 0.1) for i in range(3)]
-
     x = np.linspace(-3, 3, 10)
     y = [f(x_i, params) for x_i in x]
-    y_rand = [(params_rand[0] + params_rand[1] * x_i) * (-1 / params_rand[2]) for x_i in x]
+    y_rand = [f(x_i, start_params) for x_i in x]
 
+    data = np.loadtxt(data)
     plt.plot(data[len(data) // 2:, 0], data[len(data) // 2:, 1], 'ro')
     plt.plot(data[:len(data) // 2, 0], data[:len(data) // 2, 1], 'go')
     plt.plot(x, y, 'k')
     plt.plot(x, y_rand, 'b')
     plt.show()
 
-def train_model(learning_rate=0.01):
+def train_model(learning_rate=0.05):
     file_path = '..//data//data.txt'
     if os.path.exists(file_path):
         data = np.loadtxt(file_path)
-        err, thetas_end = m_b_g_d(data, learning_rate, batch_size=32)
-        plot_model(data, thetas_end)
+        err, thetas_end, thetas_start = m_b_g_d(data, learning_rate, batch_size=32)
+        plot_model(file_path, thetas_end, thetas_start)
         return err, thetas_end
     else:
         print("no file found")
 
 if __name__== "__main__":
     errors, params = train_model()
-    print(errors, params)
+    print(errors, '\n',params)
