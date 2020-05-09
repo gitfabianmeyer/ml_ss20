@@ -21,9 +21,7 @@ def create_mini_batches(data, batch_size):
     return batches
 
 
-# use mini batch gradient (repeat until convergence) k \in [10,1000]
 def z(x, thetas):
-    # to fit len(x) == len(thetas)
     return np.matmul(x, thetas)
 
 
@@ -36,14 +34,14 @@ def cost(x, y, thetas):
     return y - g_of_x(x, thetas)
 
 
-def m_b_g_d(data, alpha, batch_size):
+def s_g_d(data, alpha):
     #random initialize thetas
     thetas = [random.uniform(-0.01, 0.01) for i in range(data.shape[1])]
     start_thetas = thetas
 
-    error_list = [np.inf]
+    error_list = []
     for i in range(100):
-        print("Iteration: {}".format(i+1))
+        #print("Iteration: {}".format(i+1))
 
         for point in data:
             x = [1, point[0], point[1]]
@@ -51,33 +49,39 @@ def m_b_g_d(data, alpha, batch_size):
             costs = cost(x, point[2], thetas)
             error_list.append(costs)
             for j in range(len(thetas)):
-                #maybe add power
                 theta_j = thetas[j] + alpha * costs * x[j]
                 theta_new.append(theta_j)
             thetas = theta_new
 
-    return error_list[1:], thetas, start_thetas
+    return error_list, thetas, start_thetas
 
 def plot_model(data, params, start_params):
+    path = "c://users//fmeyer//git//ml_ss20//files//graphics"
+
     def f(x, thetas):
         return (thetas[0] + thetas[1]*x) * (-1/thetas[2])
 
     x = np.linspace(-3, 3, 10)
     y = [f(x_i, params) for x_i in x]
-    y_rand = [f(x_i, start_params) for x_i in x]
+    y_start = [f(x_i, start_params) for x_i in x]
 
     data = np.loadtxt(data)
-    plt.plot(data[len(data) // 2:, 0], data[len(data) // 2:, 1], 'ro')
-    plt.plot(data[:len(data) // 2, 0], data[:len(data) // 2, 1], 'go')
-    plt.plot(x, y, 'k')
-    plt.plot(x, y_rand, 'b')
+
+    fig, ax = plt.subplots()
+    line1 = ax.plot(x, y, 'k', label="Fitted Model")
+    line2 = ax.plot(x, y_start, 'y', label="Start Model")
+    dots1 = ax.plot(data[len(data) // 2:, 0], data[len(data) // 2:, 1], 'ro')
+    dots2 = ax.plot(data[:len(data) // 2, 0], data[:len(data) // 2, 1], 'go')
+    ax.set_title("Model Exercise 2")
+    ax.legend()
+    plt.savefig(os.path.join(path,'model_ex2.png'))
     plt.show()
 
 def train_model(learning_rate=0.05):
     file_path = '..//data//data.txt'
     if os.path.exists(file_path):
         data = np.loadtxt(file_path)
-        err, thetas_end, thetas_start = m_b_g_d(data, learning_rate, batch_size=32)
+        err, thetas_end, thetas_start = s_g_d(data, learning_rate)
         plot_model(file_path, thetas_end, thetas_start)
         return err, thetas_end
     else:
