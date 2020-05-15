@@ -84,15 +84,14 @@ def get_deviance(data_matrix, mean_vector):
     # careful: not normalized
     res = np.zeros((mean_vector.shape[0], mean_vector.shape[0]))
     for i in data_matrix:
-
-        res = res + (i.reshape(-1, 1) @ mean_vector.reshape(1, -1))
+        deviance = i - mean_vector
+        res = res + (deviance.reshape(-1, 1) @ deviance.reshape(1, -1))
     return res
 
 
 def get_covariance_matrix(pos, neg, my_pos, my_neg):
-    if not pos.shape == neg.shape:
-        print("Wrong dimensions in your features vectors. Cannot create cov matrix")
-        return None
+
+    assert pos.shape == neg.shape, "Wrong dimensions in your features vectors. Cannot create cov matrix"
 
     m = pos.shape[0] + neg.shape[0]
     pos_dev = get_deviance(pos, my_pos)
@@ -149,9 +148,9 @@ def decision(x, phi, sigma, my_1, my_0):
 
 
     if proba_1 > proba_0:
-        return proba_1
+        return 1
     else:
-        return proba_0
+        return 0
 
 
 def test_model(path_pos, path_neg):
@@ -170,6 +169,8 @@ def test_model(path_pos, path_neg):
     return pos_estimations, neg_estimations
 
 
-est_1, est_2 = test_model(pos_path, neg_path)
-print(est_1)
-print(est_2)
+if __name__ == '__main__':
+    est_1, est_2 = test_model(pos_path, neg_path)
+    print("Used features: min and avg value of each color channel")
+    print("Positives examples where classified as:", est_1)
+    print("\n\nNegative examples where classified as:", est_2)
