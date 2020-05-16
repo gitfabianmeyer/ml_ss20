@@ -19,6 +19,42 @@ def load_images_from_dir(path_to_dir):
 
 
 # 1) create a feature vector
+def create_feature_vectors(pos,
+                           neg,
+                           R_min=False,
+                           G_min=False,
+                           B_min=False,
+                           R_avg=True,
+                           G_avg=True,
+                           B_avg=True,
+                           R_max=True,
+                           G_max=True,
+                           B_max=True
+                           ):
+    pos_feat = create_feature_vector(pos,
+                                     R_min=R_min,
+                                     G_min=G_min,
+                                     B_min=B_min,
+                                     R_avg=R_avg,
+                                     G_avg=G_avg,
+                                     B_avg=B_avg,
+                                     R_max=R_max,
+                                     G_max=G_max,
+                                     B_max=B_max
+                                     )
+    neg_feat = create_feature_vector(neg,
+                                     R_min=R_min,
+                                     G_min=G_min,
+                                     B_min=B_min,
+                                     R_avg=R_avg,
+                                     G_avg=G_avg,
+                                     B_avg=B_avg,
+                                     R_max=R_max,
+                                     G_max=G_max,
+                                     B_max=B_max
+                                     )
+    return pos_feat, neg_feat
+
 def create_feature_vector(data,
                           R_min=False,
                           G_min=False,
@@ -152,25 +188,69 @@ def decision(x, phi, sigma, my_1, my_0):
     else:
         return 0
 
+def accuracy_two_classes(class_true, class_false):
+    tp = 0
+    tn = 0
+    fp = 0
+    fn = 0
+
+    for label in class_true:
+        if label == 1:
+            tp += 1
+        elif label == 0:
+            fn +=1
+
+    for label in class_false:
+        if label == 0:
+            tn +=1
+        elif label == 1:
+            fp +=1
+
+    return (tp+tn) / (tp+tn+fp+fn)
+
+
 
 def test_model(path_pos, path_neg):
     # load pictures
     positives = load_images_from_dir(path_pos)
     negatives = load_images_from_dir(path_neg)
     # create feature vectores
-    pos_features = create_feature_vector(positives)
-    neg_features = create_feature_vector(negatives)
+    pos_features, neg_features = create_feature_vectors(positives,
+                                                        negatives,
+                                                        R_min=False,
+                                                        G_min=True,
+                                                        B_min=True,
+                                                        R_avg=True,
+                                                        G_avg=True,
+                                                        B_avg=True,
+                                                        R_max=True,
+                                                        G_max=False,
+                                                        B_max=False)
 
     phi, my_0, my_1, sigma = estimate_gda_params(pos_features, neg_features)
 
     pos_estimations = [decision(x, phi, sigma, my_1, my_0) for x in pos_features]
     neg_estimations = [decision(x, phi, sigma, my_1, my_0) for x in neg_features]
+    acc = accuracy_two_classes(pos_estimations, neg_estimations)
 
-    return pos_estimations, neg_estimations
+    results = {}
+    results["phi"] = phi
+    results["my_0"] = my_0
+    results["my_1"] = my_1
+    results["sigma"] = sigma
+    results["pos_estimations"] = pos_estimations
+    results["neg_estimations"] = neg_estimations
+    results["accuracy"] = acc
+
+    return results
 
 
 if __name__ == '__main__':
-    est_1, est_2 = test_model(pos_path, neg_path)
-    print("Used features: min and avg value of each color channel")
-    print("Positives examples where classified as:", est_1)
-    print("\n\nNegative examples where classified as:", est_2)
+    results = test_model(pos_path, neg_path)
+    print("Positives examples where classified as:", results["pos_estimations"])
+    print("\n\nNegative examples where classified as:", results["neg_estimations"])
+    print("Phi = ", results["phi"])
+    print("Sigma = ", results["sigma"])
+    print("my_false = ", results["my_0"])
+    print("my_true = ", results["my_1"])
+    print("Accuracy: ", results["accuracy"])
