@@ -1,4 +1,4 @@
-from Exercise3.ex3 import get_mean_vector
+from Code.src.ex3 import get_mean_vector
 import numpy as np
 
 test_numpy_array = np.array([[1,2,3,4,5,6],
